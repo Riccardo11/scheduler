@@ -19,9 +19,9 @@ assigned_step_type = collections.namedtuple('assigned_step_type',
 # ]
 
 receipts = [
-    [OvenFry(3)], #, OvenCook(3, 120, 150), BlastStep(4)],
-    [OvenCook(3, 100, 130)], #, OvenCook(2, 50, 90), VacuumStep(4)],
-    [OvenCook(2, 120, 150)] #, VacuumStep(2)]
+    [OvenFry({"duration": 2})], #, OvenCook(3, 120, 150), BlastStep(4)],
+    [OvenCook({"duration": 3, "min_temperature": 100, "max_temperature": 130})], #, OvenCook(2, 50, 90), VacuumStep(4)],
+    [OvenCook({"duration": 2, "min_temperature": 120, "max_temperature": 150})] #, VacuumStep(2)]
 ]
 
 N_STEPS = 0
@@ -29,20 +29,14 @@ for receipt in receipts:
     for step in receipt:
         N_STEPS = N_STEPS+1
 
-# receipts_clusters = {
-#     "OvenCook": [step for receipt in receipts for step in receipt if isinstance(step, OvenCook)],
-#     "BlastStep": [step for receipt in receipts for step in receipt if isinstance(step, BlastStep)],
-#     "VacuumStep": [step for receipt in receipts for step in receipt if isinstance(step, VacuumStep)]
-# }
-
-EOH = sum([step.duration for receipt in receipts for step in receipt])
+EOH = sum([step.attributes["duration"] for receipt in receipts for step in receipt])
 print("End of Horizon (Upper Bound): %i" % EOH)
 
 lb = 0
 for receipt in receipts:
     dur_receipt = 0
     for step in receipt:
-        dur_receipt += step.duration+1
+        dur_receipt += step.attributes["duration"]+1
     if dur_receipt > lb:
         lb = dur_receipt
 
@@ -82,7 +76,7 @@ def SIAF_scheduler():
 
                     for is_frying in range(2):
 
-                        duration_var = model.NewEnumeratedIntVar([0,0, step.duration,step.duration], 
+                        duration_var = model.NewEnumeratedIntVar([0,0, step.attributes["duration"],step.attributes["duration"]], 
                                                             'duration_%i_%i__m_%i_f_%i' % (rec_id, step_id, compatible_machine, is_frying))
 
                         # Creation of boolean variables as support: if dur_literal is True, then duration > 0
@@ -127,7 +121,7 @@ def SIAF_scheduler():
                         )
                         all_machines[rec_id, step_id, compatible_machine, is_frying] = machine_var
                 else:
-                    duration_var = model.NewEnumeratedIntVar([0,0, step.duration,step.duration], 
+                    duration_var = model.NewEnumeratedIntVar([0,0, step.attributes["duration"],step.attributes["duration"]], 
                                                             'duration_%i_%i__m_%i' % (rec_id, step_id, compatible_machine))
 
                     # Creation of boolean variables as support: if dur_literal is True, then duration > 0
@@ -222,8 +216,8 @@ def SIAF_scheduler():
                     for is_frying in range(2):
                         same_step_dur_var.append(all_steps[rec_id, step_id, compatible_machine, is_frying].duration)
             model.AddSumConstraint(same_step_dur_var,
-                                    step.duration, 
-                                    step.duration)
+                                    step.attributes["duration"], 
+                                    step.attributes["duration"])
 
 
     # # Constraints saying "if a step is assigned to a machine, its start time
@@ -254,6 +248,7 @@ def SIAF_scheduler():
     # #                     model.AddImplication(all_machines[rec_id, step_id, compatible_machine] == 1,
     # #                                          all_machines[rec_id, step_id, compatible_machine] == 0)
 
+
     # # Constraints saying "exactly one of the machine variables must be set to 1"
     for rec_id, receipt in enumerate(receipts):
         for step_id, step in enumerate(receipt):
@@ -265,6 +260,7 @@ def SIAF_scheduler():
                     for is_frying in range(2):
                         same_step_var.append(all_machines[rec_id, step_id, compatible_machine, is_frying])
             model.AddSumConstraint(same_step_var, 1, 1)
+
 
     # Cumulative constraints for the machines' capacities
     for m_id, machine in enumerate(machines):
@@ -282,11 +278,12 @@ def SIAF_scheduler():
             # interval_list = [all_steps[(rec_id, step_id)].interval for step_id in range(len(receipt))]
         model.AddCumulative(interval_list, [1]*len(interval_list), machine.capacity)
             
-    # Cumulative constraints to model the impossibility of cooking and frying
+
+    # Cooking and frying activities should not be performed
     # in the same oven
-    # for fry_interval in all_fries:
-    #     for cook_interval in all_cooks:
-    #         model.AddCumulative([])
+    for interval_fry_var in all_fries:
+        for interval_cook_var in all_cooks:
+            model.AddNoOverlap([interval_fry_var, interval_cook_var])
 
 
     # Objective function
@@ -396,7 +393,7 @@ def SIAF_scheduler():
             # Add spaces to output to align columns.
             sol_line_steps += name + ' ' * (disp_col_width - len(name))
             start = assigned_step.start
-            duration = receipts[assigned_step.receipt][assigned_step.index].duration
+            duration = receipts[assigned_step.receipt][assigned_step.index].attributes["duration"]
 
             sol_tmp = '[%i,%i]' % (start, start + duration)
             if isinstance(receipts[assigned_step.receipt][assigned_step.index], OvenFry):
@@ -437,7 +434,7 @@ def find_compatible_machines(step):
         return [m_id 
                 for m_id, machine in enumerate(machines)
                 if isinstance(machine, Oven) and
-                   machine.max_temperature >= step.max_temperature]
+                   machine.max_temperature >= step.attributes['max_temperature']]
     elif isinstance(step, VacuumStep):
         return [m_id for m_id, machine in enumerate(machines) if isinstance(machine, VacuumMachine)]
     elif isinstance(step, BlastStep):
