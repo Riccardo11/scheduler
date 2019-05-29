@@ -1,7 +1,7 @@
 from ortools.sat.python import cp_model
 import collections
-from receipt import BlastStep, OvenCook, OvenFry, VacuumStep
-from machine import BlastChiller, Oven, VacuumMachine
+from receipt import *
+from machine import BlastChiller, Oven, VacuumMachine, Human
 import warnings
 
 # Some useful types used below
@@ -18,10 +18,12 @@ assigned_step_type = collections.namedtuple('assigned_step_type',
 #     [(2, [3])]
 # ]
 
+oven_cook = OvenCook({"duration": 3, "temperature": 120})
+
 receipts = [
     [OvenFry({"duration": 2})], #, OvenCook(3, 120, 150), BlastStep(4)],
-    [OvenCook({"duration": 3, "min_temperature": 100, "max_temperature": 130})], #, OvenCook(2, 50, 90), VacuumStep(4)],
-    [OvenCook({"duration": 2, "min_temperature": 120, "max_temperature": 150})] #, VacuumStep(2)]
+    [oven_cook], #, OvenCook(2, 50, 90), VacuumStep(4)],
+    [OvenCook({"duration": 2, "temperature": 150})] #, VacuumStep(2)]
 ]
 
 N_STEPS = 0
@@ -45,7 +47,7 @@ print("Lower Bound: %i" % (lb-1))
 # Macchine: composte da capacità e capabilities
 # machines_old = [(1,[2]), (1,[1,2]), (2,[3])]
 
-machines = [Oven(2, 300, True)]#, Oven(2, 300, True), Oven(1, 300, True), BlastChiller(2), VacuumMachine(1)]
+machines = [Oven(2, 300, True)] # , Oven(1, 300, True), BlastChiller(2), VacuumMachine(1)]
 
 def SIAF_scheduler():
     # create the model
@@ -60,10 +62,10 @@ def SIAF_scheduler():
     all_machines = {}
 
     # interval variables for fry steps
-    all_fries = []
+    all_fries = {}
 
     # interval variables for cooking steps
-    all_cooks = []
+    all_cooks = {}
 
     # Create variables
     for rec_id, receipt in enumerate(receipts):
@@ -101,9 +103,13 @@ def SIAF_scheduler():
                         )
 
                         if isinstance(step, OvenCook):
-                            all_cooks.append(interval_var)
+                            if not compatible_machine in all_cooks:
+                                all_cooks[compatible_machine] = []
+                            all_cooks[compatible_machine].append(interval_var)
                         elif isinstance(step, OvenFry):
-                            all_fries.append(interval_var)
+                            if not compatible_machine in all_fries:
+                                all_fries[compatible_machine] = []
+                            all_fries[compatible_machine].append(interval_var)
 
                         # update the task dictionary
                         all_steps[rec_id, step_id, compatible_machine, is_frying] = step_type(
@@ -279,11 +285,48 @@ def SIAF_scheduler():
         model.AddCumulative(interval_list, [1]*len(interval_list), machine.capacity)
             
 
+    # If a step is not an OvenFry, the is_frying index of the matrix variables
+    # should be 0
+    for rec_id, receipt in enumerate(receipts):
+        for step_id, step in enumerate(receipt):
+            if not isinstance(step, OvenFry):
+                for m_id in find_compatible_machines(step):
+                    model.Add(all_machines[rec_id, step_id, m_id, 1] == 0)
+
     # Cooking and frying activities should not be performed
     # in the same oven
-    for interval_fry_var in all_fries:
-        for interval_cook_var in all_cooks:
-            model.AddNoOverlap([interval_fry_var, interval_cook_var])
+    for fry_comp_machine in all_fries.keys():
+        for cook_comp_machine in all_cooks.keys():
+            if fry_comp_machine == cook_comp_machine:
+                for interval_fry_var in all_fries[fry_comp_machine]:
+                    for interval_cook_var in all_cooks[cook_comp_machine]:
+                        model.AddNoOverlap([interval_fry_var, interval_cook_var])
+
+
+    # If you want to cook two dishes in the same oven
+    # they must require the same temperature
+    # warnings.warn("Mettere temperature nella definizione degli step")
+    for rec_id, receipt in enumerate(receipts):
+        for step_id, step in enumerate(receipt):
+            for rec_id_1, receipt_1 in enumerate(receipts):
+                for step_id_1, step_1 in enumerate(receipt_1):
+                    if rec_id_1 > rec_id:
+                        b1 = isinstance(step, OvenCook)
+                        b2 = isinstance(step_1, OvenCook)
+                        t1 = step.attributes
+                        # t2 = step_1.attributes["temperature"]
+                        if (isinstance(step, OvenCook) and 
+                            isinstance(step_1, OvenCook) and
+                            step.attributes["temperature"] != step_1.attributes["temperature"]):
+                            print("Wiela")
+                            for m_id in find_compatible_machines(step):
+                                for m_id_1 in find_compatible_machines(step_1):
+                                    if m_id == m_id_1:
+                                        model.AddNoOverlap([all_steps[rec_id, step_id, m_id, 0].interval,
+                                                            all_steps[rec_id_1, step_id_1, m_id_1, 0].interval])
+
+
+
 
 
     # Objective function
@@ -434,7 +477,7 @@ def find_compatible_machines(step):
         return [m_id 
                 for m_id, machine in enumerate(machines)
                 if isinstance(machine, Oven) and
-                   machine.max_temperature >= step.attributes['max_temperature']]
+                   machine.max_temperature >= step.attributes['temperature']]
     elif isinstance(step, VacuumStep):
         return [m_id for m_id, machine in enumerate(machines) if isinstance(machine, VacuumMachine)]
     elif isinstance(step, BlastStep):
@@ -442,6 +485,8 @@ def find_compatible_machines(step):
     elif isinstance(step, OvenFry):
         return [m_id for m_id, machine in enumerate(machines) if isinstance(machine, Oven) and
                                                                  machine.can_fry]
+    elif isinstance(step, HumanStep):
+        return [m_id for m_id, machine in enumerate(machines) if isinstance(machine, Human)]
 
     return []
 

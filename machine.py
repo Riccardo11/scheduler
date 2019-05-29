@@ -15,3 +15,6 @@ class BlastChiller(Machine):
 
 class VacuumMachine(Machine):
     pass
+
+class Human(Machine):
+    pass
