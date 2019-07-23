@@ -1,7 +1,7 @@
 from receipt import *
 import networkx as nx
 import matplotlib.pyplot as plt
-import json
+import json, pprint
 
 
 def read_steps(filepath):
@@ -86,32 +86,37 @@ def get_steps_objects(step_list):
 class WFCoreUtils:
 
     BLAST_STEP_ID = "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp"
-    PREBLAST_STEP_ID = "Preraffreddamento Hard"
+    PREBLAST_STEP_ID = "\"Preraffreddamento Hard\""
     OVEN_STEP_ID = "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp"
-    PREHEAT_STEP_ID = "Preriscalda"
+    PREHEAT_STEP_ID = "\"Preriscalda\""
     VACUUM_STEP_ID = "WorkflowCore.Steps.VacuumStep, ProvaWOrkflowCorewebapp"
     HUMAN_STEP_ID = "WorkflowCore.Steps.HumanStep, ProvaWOrkflowCorewebapp"
 
     NORMAL_STEP_IDS = [BLAST_STEP_ID, OVEN_STEP_ID, VACUUM_STEP_ID, HUMAN_STEP_ID]
 
-    def __init__(self, wfcore_json_str):
-        self.wfcore_json = json.loads(wfcore_json_str)
-        self.step_dict = {}
+    def __init__(self, wfcore_path):
+        with open(wfcore_path) as f:
+            wfcore_json_str = f.read()
+            self.wfcore_json = json.loads(wfcore_json_str)
+            self.step_dict = {}
+            self.graph = nx.DiGraph()
 
 
     '''
     Get the json form of a step giving its id
     '''
     def get_step_from_id(self, step_id):
+        # step_list = self.wfcore_json["Steps"]
         return self.__get_step_from_id_rec(step_id, self.wfcore_json)
 
     def __get_step_from_id_rec(self, step_id, json):
-        for k, v in self.wfcore_json:
+        for k, v in (json.items() if isinstance(json, dict) else
+                     enumerate(json) if isinstance(json, list) else []):
             if k == "Id" and v == step_id:
-                return json
-            elif isinstance(v, dict):
-                return self.__get_step_from_id_rec(step_id, v)
-        return 0
+                yield json
+            elif isinstance(v, (dict, list)):
+                for result in self.__get_step_from_id_rec(step_id, v):
+                    yield result
 
 
     '''
@@ -121,6 +126,12 @@ class WFCoreUtils:
         step_list = self.wfcore_json["Steps"]
 
         self.__get_steps_objects_from_wf_rec(step_list)
+
+        for step_id, step_obj in self.step_dict.items():
+            if isinstance(step_obj, PreStep):
+                splitted_id = step_id.split("_")
+                next_step_id = self.step_dict[splitted_id[0] + "_" + str(int(splitted_id[1]) + 1)]
+                step_obj.next_step = next_step_id
         
 
     def __get_steps_objects_from_wf_rec(self, step_json):
@@ -132,7 +143,10 @@ class WFCoreUtils:
                 else:
                     self.step_dict[step_id] = OvenCook({"duration": 4, "temperature": 2})
             elif (step_json["StepType"] == self.BLAST_STEP_ID):
-                self.step_dict[step_id] = Blast({"duration": 4})
+                if step_json["Inputs"]["BlastValue1"] == self.PREBLAST_STEP_ID:
+                    self.step_dict[step_id] = PreBlast({"duration": 5}, None)
+                else:
+                    self.step_dict[step_id] = Blast({"duration": 4})
             elif (step_json["StepType"] == self.HUMAN_STEP_ID):
                 self.step_dict[step_id] = HumanStep({"duration": 4})
             elif (step_json["StepType"] == self.VACUUM_STEP_ID):
@@ -147,63 +161,54 @@ class WFCoreUtils:
                     self.__get_steps_objects_from_wf_rec(v)
 
         
+    def create_graph(self):
+        self.get_steps_objects_from_wf()
+        for step_id in self.step_dict:
+            print(step_id)
+            json_step = list(self.get_step_from_id(step_id))[0]
+            # print(x)
+            next_steps_id = self.get_next_steps(json_step)
+
+            for next_step_id in next_steps_id:
+                if isinstance(self.step_dict[step_id], PreHeat) and isinstance(self.step_dict[next_step_id], OvenCook):
+                    self.step_dict[step_id].attributes["temperature"] = self.step_dict[next_step_id].attributes["temperature"]
+                    self.step_dict[step_id].next_step = self.step_dict[next_step_id]
+                if isinstance(self.step_dict[step_id], PreBlast) and isinstance(self.step_dict[next_step_id], Blast):
+                    self.step_dict[step_id].next_step = self.step_dict[next_step_id]
+                self.graph.add_edge(self.step_dict[step_id], self.step_dict[next_step_id])
+
+        return self.graph
+
+    def draw_graph(self):
+        nx.draw(self.graph, with_labels=True)
+        plt.show()
 
 
-    '''
-    Convert a workflow-core json in a networkx graph
-    '''
-    # def get_graph_from_json(self):
-    #     return self.__get_graph_from_json_rec(self.wfcore_json, nx.DiGraph())
+    def get_next_steps(self, step_json):
 
-    # def __get_graph_from_json_rec(self, wf_json, graph):
-    #     for k, v in wf_json:
-    #         if k == "StepType" and (v in self.NORMAL_STEP_IDS):
-    #             updated_graph = self.update_graph(wf_json, graph)
+        if "NextStepId" in step_json:
+            wait_step = list(self.get_step_from_id(step_json["NextStepId"]))[0]
 
+            if "NextStepId" in wait_step:
+                step_after_wait = list(self.get_step_from_id(wait_step["NextStepId"]))[0]
 
-    '''
-    Add new activities to an existing graph
-    '''
-    def update_graph(self, wf_json, old_graph):
-        if "NextStepId" in wf_json:
-
-            step_type = wf_json["StepType"]
-            
-            if step_type == self.BLAST_STEP_ID:            
-                step_input = wf_json["Inputs"]["BlastValue1"]
-                
-                if step_input == self.PREBLAST_STEP_ID:
-                    wait_preblast_step_id = wf_json["NextStepId"]
-                    wait_preblast_step_json = self.get_step_from_id(wait_preblast_step_id)
-                    blast_step_id = wait_preblast_step_json["NextStepId"]
-                    blast_step_json = self.get_step_from_id(blast_step_id)
-
-                    blast_step = BlastStep({"duration": 5})
-                    preblast_step = PreBlast({"duration": 6}, blast_step)
-
-
-
-    '''
-    Obtain the object representation of a step
-    '''
-    def get_step_from_json(self, json_step):
-        step_type = json_step["StepType"]
-
-        if step_type == self.BLAST_STEP_ID:            
-            step_input = json_step["Inputs"]["BlastValue1"]
-            
-            if step_input == self.PREBLAST_STEP_ID:
-                wait_preblast_step = json_step["NextStepId"]
-                wait_preblast_step_json = self.get_step_from_id(wait_preblast_step)
-                blast_step = wait_preblast_step_json["NextStepId"]
-                blast_step_json = self.get_step_from_id(blast_step)
+                if step_after_wait["StepType"] in self.NORMAL_STEP_IDS:
+                    return [step_after_wait["Id"]]
+                elif step_after_wait["StepType"] == "WorkflowCore.Primitives.Sequence, WorkflowCore":
+                    next_step_list_json = step_after_wait["Do"]
+                    next_steps = []
+                    # prendere i primi elementi delle liste
+                    for next_step_json_ann_list in next_step_list_json:
+                        next_steps.append(next_step_json_ann_list[0]["Id"])
+                    return next_steps
+        return []
 
 
 if __name__ == '__main__':
-    with open("C:\\Users\\Riccardo Minato\\Desktop\\Universita\\SIAF\\BPMN\\Bistecca Perfetta.json", "r") as f:
-        wf_json = f.read()
-        wfutils = WFCoreUtils(wf_json)
-        wfutils.get_steps_objects_from_wf()
+        wfutils = WFCoreUtils("C:\\Users\\Riccardo Minato\\Desktop\\Universita\\SIAF\\BPMN\\Sous-Vide Lemon Curd_globals.json")
+        wfutils.create_graph()
+        wfutils.draw_graph()
 
-        print(wfutils.step_dict)
+        # print(wfutils.step_dict)
+        print("END")
 

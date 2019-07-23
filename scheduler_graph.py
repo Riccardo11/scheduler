@@ -4,7 +4,7 @@ import collections
 import json
 from receipt import *
 from machine import BlastChiller, Oven, VacuumMachine, Human
-from utils import create_graph, read_steps
+from utils import WFCoreUtils
 import warnings
 
 # Some useful types used below
@@ -31,11 +31,11 @@ oven_cook_3 = OvenCook({"duration": 3, "temperature": 140})
 #     [PreHeat({"duration": 6, "temperature": 130}, oven_cook_1), oven_cook_1] #, VacuumStep({"duration": 2})]
 # ]
 
-blast_step_1 = BlastStep({"duration": 4})
+blast_step_1 = Blast({"duration": 4})
 preblast_1 = PreBlast({"duration": 8}, blast_step_1)
-blast_step_2 = BlastStep({"duration": 5})
+blast_step_2 = Blast({"duration": 5})
 preblast_2 = PreBlast({"duration": 6}, blast_step_2)
-blast_step_3 = BlastStep({"duration": 1})
+blast_step_3 = Blast({"duration": 1})
 preblast_3 = PreBlast({"duration": 9}, blast_step_3)
 
 human_step_1 = HumanStep({"duration": 3})
@@ -52,8 +52,8 @@ vacuum_3 = VacuumStep({"duration": 4})
 r1 = nx.DiGraph()
 
 # Ricetta Sous-Vide Lemon Curd
-#
-# r1.add_edges_from([(preblast_1, vacuum_1), 
+
+# r1.add_edges_from([(preblast_1, blast_step_1), 
 #                    (vacuum_1, blast_step_1), 
 #                    (blast_step_1, preblast_2),
 #                    (preblast_2, blast_step_2),
@@ -73,7 +73,12 @@ r1 = nx.DiGraph()
 # Ricetta Bistecca
 #
 
-r1_dict, r1 = create_graph("receipe.txt")
+wfcore_utils_cream = WFCoreUtils("C:\\Users\\Riccardo Minato\\Desktop\\Universita\\SIAF\\BPMN\\Sous-Vide Lemon Curd_globals.json")
+
+r1 = wfcore_utils_cream.create_graph()
+
+wfcore_utils_meat = WFCoreUtils("C:\\Users\\Riccardo Minato\\Desktop\\Universita\\SIAF\\BPMN\\Bistecca Perfetta.json")
+r2 = wfcore_utils_meat.create_graph()
 
 # r1.add_edges_from([(preblast_1, blast_step_1),
 #                    (blast_step_1, preblast_2),
@@ -96,7 +101,7 @@ machines = [Oven(5, 300, True), BlastChiller(4), VacuumMachine(1), Human(1)]
 # r1.add_edges_from([(blast_step, pre_heat_3), (pre_heat_3, oven_cook_2), (oven_cook_2, vacuum)])
 
 receipts = [
-    r1
+    r1, r2
 ]
 
 N_STEPS = 0
@@ -315,6 +320,8 @@ def SIAF_scheduler():
                             same_step_dur_var.append(all_steps[rec_id, step_id, compatible_machine, is_frying].duration)
                             same_step_dur_lit.append(all_steps_dur_literals[rec_id, step_id, compatible_machine, is_frying])
                 
+                warnings.warn("DECOMMENTARE QUI E COMMENTARE SOTTO PER SVILUPPI FUTURI! Stiamo trattando i preriscaldamenti come altre attività")
+                '''
                 if not isinstance(step, PreStep):
                     # model.AddSumConstraint(same_step_dur_var,
                     #                         step.attributes["duration"], 
@@ -329,6 +336,8 @@ def SIAF_scheduler():
                     # exactly one 1
                     # model.AddBoolOr([lit.Not() for lit in same_step_dur_lit])
                     model.Add(sum(same_step_dur_lit) == 1)
+                '''
+                model.Add(sum(same_step_dur_var) == step.attributes["duration"])
 
 
 
@@ -509,20 +518,23 @@ def SIAF_scheduler():
                 cook_index = get_index_from_graph(receipt, step.next_step)
                 for compatible_machine in find_compatible_machines(step):
                     model.AddImplication(all_machines[(rec_id, step_id, compatible_machine, 0)],
-                                         all_machines[(rec_id, cook_index, compatible_machine, 0)])
-                    model.Add(all_steps[(rec_id, step_id, compatible_machine, 0)].end  + 1
-                              >=
-                              all_steps[(rec_id, cook_index, compatible_machine, 0)].start)
+                                        all_machines[(rec_id, cook_index, compatible_machine, 0)])
+                    # Rimettere
+                    # model.Add(all_steps[(rec_id, step_id, compatible_machine, 0)].end  + 1
+                    #           >=
+                    #           all_steps[(rec_id, cook_index, compatible_machine, 0)].start)
             elif isinstance(step, PreBlast):
                 blast_index = get_index_from_graph(receipt, step.next_step)
                 for compatible_machine in find_compatible_machines(step):
                     model.AddImplication(all_machines[(rec_id, step_id, compatible_machine)],
-                                        all_machines[(rec_id, blast_index, compatible_machine)])
-                    model.Add(all_steps[(rec_id, step_id, compatible_machine)].end  + 1
-                            >=
-                            all_steps[(rec_id, blast_index, compatible_machine)].start)
+                                       all_machines[(rec_id, blast_index, compatible_machine)])
+                    # Rimettere
+                    # model.Add(all_steps[(rec_id, step_id, compatible_machine)].end  + 1
+                    #         >=
+                    #         all_steps[(rec_id, blast_index, compatible_machine)].start)
 
 
+    '''
     # The preheat duration depends on the temperature the previous step
     # left on that oven
     on_same_machine_preheat = {}
@@ -804,7 +816,7 @@ def SIAF_scheduler():
                             [lit.Not() for lit in same_step_var_preblast] + 
                             [all_machines[(rec_id, step_id, compatible_machine)]]
                         )
-
+    '''
 
     # Find the nearest step before the preheat
     # near_steps_distance_vars = {}
@@ -901,15 +913,15 @@ def SIAF_scheduler():
     print("Optimal Schedule Length: %i" % solver.ObjectiveValue())
     print()
 
-    for key, value in preheat_starts_after.items():
-        print(key)
-        print(solver.Value(value))
-        print()
+    # for key, value in preheat_starts_after.items():
+    #     print(key)
+    #     print(solver.Value(value))
+    #     print()
 
-    for key, value in min_dist_preheat_vars.items():
-        print(key)
-        print(solver.Value(value))
-        print()
+    # for key, value in min_dist_preheat_vars.items():
+    #     print(key)
+    #     print(solver.Value(value))
+    #     print()
 
     for rec_id, receipt in enumerate(receipts):
         for step_id, step in enumerate(receipt):
@@ -1004,10 +1016,10 @@ def SIAF_scheduler():
             sol_line += sol_tmp + ' ' * (disp_col_width - len(sol_tmp))
 
             # Add values to dictionary
-            for key in r1_dict:
-                deb = get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index)
-                if get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index) == r1_dict[key]:
-                    schedule_dict[key] = (start, start + duration)
+            # for key in r1_dict:
+            #     deb = get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index)
+            #     if get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index) == r1_dict[key]:
+            #         schedule_dict[key] = (start, start + duration)
                 
 
         sol_line += '\n'
@@ -1018,12 +1030,12 @@ def SIAF_scheduler():
     print('Step Time Intervals\n')
     print(sol_line)
     print()
-    with open("schedule.txt", "w+") as schedule_file:
-        # schedule_file.write(sol_line_steps)
-        # schedule_file.write('Step Time Intervals\n')
-        # schedule_file.write(sol_line)
-        # schedule_file.write("\n")
-        schedule_file.write(json.dumps(schedule_dict))
+    # with open("schedule.txt", "w+") as schedule_file:
+    #     # schedule_file.write(sol_line_steps)
+    #     # schedule_file.write('Step Time Intervals\n')
+    #     # schedule_file.write(sol_line)
+    #     # schedule_file.write("\n")
+    #     schedule_file.write(json.dumps(schedule_dict))
 
 
 # Function required to provide the (improbable) right input format to NewEnumeratedIntVar
