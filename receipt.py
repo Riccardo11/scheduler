@@ -4,6 +4,9 @@ class Step:
     def __init__(self, attributes):
         self.attributes = attributes
 
+    def __str__(self):
+        return self.attributes["receipe"] + ";" + self.attributes["step"]
+
     # def __eq__(self, other):
     #     if isinstance(other, self.__class__):
     #         return self.attributes == other.attributes
@@ -13,12 +16,18 @@ class Step:
     # def __hash__(self):
     #     return hash(frozenset(self.attributes.items()))
 
+
+class FakeActivity(Step):
+    def __init__(self, attributes):
+        super().__init__(attributes)
+
+
 class HumanStep(Step):
     def __init__(self, attributes):
         super().__init__(attributes)
 
-    def __str__(self):
-        return "HumanStep"
+    # def __str__(self):
+    #     return "HumanStep"
 
 class PreStep(Step):
     def __init__(self, attributes, next_step):
@@ -51,45 +60,45 @@ class OvenCook(OvenStep):
     def __init__(self, attributes):
         super().__init__(attributes)
 
-    def __str__(self):
-        return "OvenCook"
+    # def __str__(self):
+    #     return "OvenCook"
 
 class OvenFry(OvenStep):
     def __init__(self, attributes):
         super().__init__(attributes)
 
-    def __str__(self):
-        return "OvenFry"
+    # def __str__(self):
+    #     return "OvenFry"
 
 
 class VacuumStep(Step):
     def __init__(self, attributes):
         super().__init__(attributes)
 
-    def __str__(self):
-        return "Vacuum"
+    # def __str__(self):
+    #     return "Vacuum"
 
 
 class PreBlast(PreStep, BlastStep):
     def __init__(self, attirbutes, blast):
         super().__init__(attirbutes, blast)
 
-    def __str__(self):
-        return "Preblast"
+    # def __str__(self):
+    #     return "Preblast"
 
 class Blast(BlastStep):
      def __init__(self, attributes):
          super().__init__(attributes)
 
-     def __str__(self):
-        return "Blast"
+    #  def __str__(self):
+    #     return "Blast"
 
 class PreHeat(PreStep, OvenStep):
     def __init__(self, attributes, oven_cook):
         super().__init__(attributes, oven_cook)
 
-    def __str__(self):
-        return "PreHeat"
+    # def __str__(self):
+    #     return "PreHeat"
 
 '''
 Function to obtain how much time should be taken

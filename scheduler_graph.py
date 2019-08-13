@@ -101,7 +101,7 @@ machines = [Oven(5, 300, True), BlastChiller(4), VacuumMachine(1), Human(1)]
 # r1.add_edges_from([(blast_step, pre_heat_3), (pre_heat_3, oven_cook_2), (oven_cook_2, vacuum)])
 
 receipts = [
-    r1, r2
+    r1 # , r2
 ]
 
 N_STEPS = 0
@@ -987,8 +987,6 @@ def SIAF_scheduler():
     sol_line = ''
     sol_line_steps = ''
 
-    schedule_dict = {}
-
     print('Optimal Schedule', '\n')
     with open("schedule.txt", "w") as f:
         f.write("")
@@ -996,21 +994,26 @@ def SIAF_scheduler():
     for i in range(len(machines)):
         # Sort by starting time.
         assigned_receipts[i].sort()
-        sol_line += str(machines[i]) + "\t"
-        sol_line_steps += str(machines[i]) + "\t"
+        sol_line += "[" + str(machines[i]) + "]\t"
+        sol_line_steps += "[" + str(machines[i]) + "]\t"
         # sol_line += 'Machine ' + str(i) + ': '
         # sol_line_steps += 'Machine ' + str(i) + ': '
 
         for assigned_step in assigned_receipts[i]:
-            name = 'step_%i_%i' % (assigned_step.receipt, assigned_step.index)
-            # name = str(get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index)
+            # name = 'step_%i_%i' % (assigned_step.receipt, assigned_step.index)
+            curr_node = get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index)
+            name = str(curr_node) + "\t"
+            
             # Add spaces to output to align columns.
             sol_line_steps += name + ' ' * (disp_col_width - len(name))
             start = assigned_step.start
             duration = assigned_step.duration
 
+            receipts[assigned_step.receipt].nodes[curr_node]['start'] = start
+            receipts[assigned_step.receipt].nodes[curr_node]['end'] = start + duration
+
             sol_tmp = '[%i,%i]' % (start, start + duration)
-            if isinstance(get_node_from_graph(receipts[assigned_step.receipt], assigned_step.index), OvenFry):
+            if isinstance(curr_node, OvenFry):
                 sol_tmp += "_F"
             # Add spaces to output to align columns.
             sol_line += sol_tmp + ' ' * (disp_col_width - len(sol_tmp))
