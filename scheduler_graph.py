@@ -1,5 +1,6 @@
 from ortools.sat.python import cp_model
 import networkx as nx
+from matplotlib import pyplot as plt
 import collections
 import json
 from receipt import *
@@ -21,7 +22,7 @@ assigned_step_type = collections.namedtuple('assigned_step_type',
 #     [(2, [3])]
 # ]
 
-oven_cook_1 = OvenCook({"duration": 3, "temperature": 120})
+oven_cook_1 = OvenCook({"receipe": "Ricetta", "step": "oven_2", "duration": 3, "temperature": 120})
 oven_cook_2 = OvenCook({"duration": 3, "temperature": 130})
 oven_cook_3 = OvenCook({"duration": 3, "temperature": 140})
 
@@ -41,7 +42,7 @@ preblast_3 = PreBlast({"duration": 9}, blast_step_3)
 human_step_1 = HumanStep({"duration": 3})
 human_step_2 = HumanStep({"duration": 4})
 
-pre_heat_1 = PreHeat({"duration": 6, "temperature": 120}, oven_cook_1)
+pre_heat_1 = PreHeat({"receipe": "Ricetta", "step": "oven_1", "duration": 6, "temperature": 120}, oven_cook_1)
 pre_heat_2 = PreHeat({"duration": 9, "temperature": 130}, oven_cook_2)
 pre_heat_3 = PreHeat({"duration": 9, "temperature": 140}, oven_cook_3)
 
@@ -100,8 +101,10 @@ machines = [Oven(5, 300, True), BlastChiller(4), VacuumMachine(1), Human(1)]
 
 # r1.add_edges_from([(blast_step, pre_heat_3), (pre_heat_3, oven_cook_2), (oven_cook_2, vacuum)])
 
+# r1 = nx.DiGraph()
+# r1.add_edge(pre_heat_1, oven_cook_1)
 receipts = [
-    r1 # , r2
+    r1 , r2
 ]
 
 N_STEPS = 0
@@ -153,8 +156,12 @@ def SIAF_scheduler():
 
                         duration_var = 0
                         if isinstance(step, PreHeat):
-                            duration_var = model.NewIntVar(0, step.attributes["duration"], 
-                                                      'duration_%i_%i__m_%i_f_%i' % (rec_id, step_id, compatible_machine, is_frying))
+                            warnings.warn("RIMETTERE QUESTO PER MODIFICARE LA DURATA DEI PREHEAT!!")
+                            # duration_var = model.NewIntVar(0, step.attributes["duration"], 
+                            #                           'duration_%i_%i__m_%i_f_%i' % (rec_id, step_id, compatible_machine, is_frying))
+                            duration_var = model.NewIntVarFromDomain(cp_model.Domain.FromValues([0 ,step.attributes["duration"]]), 
+                                                                     'duration_%i_%i__m_%i_f_%i' % (rec_id, step_id, compatible_machine, is_frying))
+
                         elif step.attributes["duration"] == 1:
                             duration_var = model.NewIntVarFromDomain(cp_model.Domain.FromValues([0, 1]), 
                                                       'duration_%i_%i__m_%i_f_%i' % (rec_id, step_id, compatible_machine, is_frying))
@@ -213,8 +220,11 @@ def SIAF_scheduler():
                     duration_var = 0
 
                     if isinstance(step, PreBlast):
-                        duration_var = model.NewIntVar(0, step.attributes["duration"], 
-                                                      'duration_%i_%i__m_%i' % (rec_id, step_id, compatible_machine))
+                        warnings.warn("RIMETTERE QUESTO PER RENDERE VARIABILE LA DURATA DEI PREBLAST!!")
+                        # duration_var = model.NewIntVar(0, step.attributes["duration"], 
+                        #                               'duration_%i_%i__m_%i' % (rec_id, step_id, compatible_machine))
+                        duration_var = model.NewIntVarFromDomain(cp_model.Domain.FromValues([0, step.attributes["duration"]]),
+                                                                 'duration_%i_%i__m_%i' % (rec_id, step_id, compatible_machine))
                     elif step.attributes["duration"] == 1:
                         duration_var = model.NewIntVarFromDomain(cp_model.Domain.FromValues([0, 1]), 
                                                                  'duration_%i_%i__m_%i' % (rec_id, step_id, compatible_machine))
@@ -523,6 +533,34 @@ def SIAF_scheduler():
                     # model.Add(all_steps[(rec_id, step_id, compatible_machine, 0)].end  + 1
                     #           >=
                     #           all_steps[(rec_id, cook_index, compatible_machine, 0)].start)
+                    #
+                    # Temporary solution (maybe): there mustn't be any activity between a preheat and its
+                    # ovencook
+                    for rec_id_1, receipt_1 in enumerate(receipts):
+                        for step_id_1, step_1 in enumerate(receipt_1):
+                            if step != step_1 and cook_index != step_id_1:
+                                for compatible_machine_1 in find_compatible_machines(step_1):
+                                    if compatible_machine == compatible_machine_1:
+                                        oven_activity_starts_after = model.NewBoolVar(
+                                            "oven_activity_starts_after_%i_%i_%i_%i_%i" % (rec_id, step_id, rec_id_1, step_id_1, compatible_machine)
+                                        )
+                                        model.Add(all_steps[(rec_id_1, step_id_1, compatible_machine, 0)].start
+                                                  > 
+                                                  all_steps[(rec_id, cook_index, compatible_machine, 0)].end).OnlyEnforceIf(
+                                                      oven_activity_starts_after
+                                                  )
+                                        
+                                        oven_activity_ends_before = model.NewBoolVar(
+                                            "oven_activity_ends_before_%i_%i_%i_%i_%i" % (rec_id, step_id, rec_id_1, step_id_1, compatible_machine)
+                                        )
+                                        model.Add(all_steps[(rec_id_1, step_id_1, compatible_machine, 0)].end
+                                                  <
+                                                  all_steps[(rec_id, step_id, compatible_machine, 0)].start).OnlyEnforceIf(
+                                                      oven_activity_ends_before
+                                                  )
+
+                                        model.AddBoolOr([oven_activity_starts_after, oven_activity_ends_before])
+
             elif isinstance(step, PreBlast):
                 blast_index = get_index_from_graph(receipt, step.next_step)
                 for compatible_machine in find_compatible_machines(step):
@@ -1011,6 +1049,7 @@ def SIAF_scheduler():
 
             receipts[assigned_step.receipt].nodes[curr_node]['start'] = start
             receipts[assigned_step.receipt].nodes[curr_node]['end'] = start + duration
+            receipts[assigned_step.receipt].nodes[curr_node]['resource'] = i
 
             sol_tmp = '[%i,%i]' % (start, start + duration)
             if isinstance(curr_node, OvenFry):
@@ -1033,6 +1072,8 @@ def SIAF_scheduler():
     print('Step Time Intervals\n')
     print(sol_line)
     print()
+
+    wfcore_utils_cream.create_graph_from_schedule(receipts)
     # with open("schedule.txt", "w+") as schedule_file:
     #     # schedule_file.write(sol_line_steps)
     #     # schedule_file.write('Step Time Intervals\n')

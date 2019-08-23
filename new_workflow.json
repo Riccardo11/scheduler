@@ -1,0 +1,633 @@
+{
+    "Id": "New Workflow",
+    "Version": 1,
+    "Steps": [
+        {
+            "Id": "parallel_0",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;blast_1\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"blast_1\"",
+                            "duration": 15
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_1\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_1\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_1_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;blast_2\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;human_1\"",
+                        "StepType": "WorkflowCore.Steps.HumanStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"human_1\"",
+                            "duration": 2
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;human_1\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;human_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;human_1\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;human_1_key\""
+                        },
+                        "NextStepId": "parallel_1"
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;oven_1\"",
+                        "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"oven_1\"",
+                            "duration": 3,
+                            "temperature": 75
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;oven_1\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;oven_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;oven_1\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;oven_1_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;oven_2\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;blast_1\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"blast_1\"",
+                            "duration": 15
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;blast_1\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;blast_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;blast_1\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;blast_1_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;blast_2\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "parallel_1",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;blast_2\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"blast_2\"",
+                            "duration": 5,
+                            "Ingoing": 2,
+                            "ParallelIndex": 0
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_2\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_2\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_2\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_2_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;vacuum_1\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;human_1\"",
+                        "StepType": "WorkflowCore.Steps.HumanStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"human_1\"",
+                            "duration": 2
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;human_1\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;human_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;human_1\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;human_1_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;blast_2\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Sous-Vide_Lemon_Curd;oven_2\"",
+            "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                "step": "\"oven_2\"",
+                "duration": 45,
+                "temperature": 75,
+                "Ingoing": 3,
+                "ParallelIndex": 1
+            },
+            "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;oven_2\""
+        },
+        {
+            "Id": "\"wait_Sous-Vide_Lemon_Curd;oven_2\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Sous-Vide_Lemon_Curd;oven_2\"",
+                "EventKey": "\"wait_Sous-Vide_Lemon_Curd;oven_2_key\""
+            },
+            "NextStepId": "parallel_3"
+        },
+        {
+            "Id": "parallel_3",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;human_2\"",
+                        "StepType": "WorkflowCore.Steps.HumanStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"human_2\"",
+                            "duration": 2,
+                            "Ingoing": 3,
+                            "ParallelIndex": 2
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;human_2\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;human_2\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;human_2\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;human_2_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;blast_4\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;oven_3\"",
+                        "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"oven_3\"",
+                            "duration": 3,
+                            "temperature": 75,
+                            "Ingoing": 8,
+                            "ParallelIndex": 3
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;oven_3\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;oven_3\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;oven_3\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;oven_3_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;oven_4\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;oven_1\"",
+                        "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"oven_1\"",
+                            "duration": 2,
+                            "temperature": 52,
+                            "Ingoing": 3,
+                            "ParallelIndex": 4
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;oven_1\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;oven_1\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;oven_1\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;oven_1_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;oven_2\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Sous-Vide_Lemon_Curd;vacuum_1\"",
+            "StepType": "WorkflowCore.Steps.VacuumStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                "step": "\"vacuum_1\"",
+                "duration": 5,
+                "Ingoing": 2,
+                "ParallelIndex": 5
+            },
+            "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;vacuum_1\""
+        },
+        {
+            "Id": "\"wait_Sous-Vide_Lemon_Curd;vacuum_1\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Sous-Vide_Lemon_Curd;vacuum_1\"",
+                "EventKey": "\"wait_Sous-Vide_Lemon_Curd;vacuum_1_key\""
+            },
+            "NextStepId": "parallel_4"
+        },
+        {
+            "Id": "parallel_4",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;blast_3\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"blast_3\"",
+                            "duration": 15,
+                            "Ingoing": 2,
+                            "ParallelIndex": 6
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_3\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_3\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_3\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_3_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;blast_4\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;vacuum_2\"",
+                        "StepType": "WorkflowCore.Steps.VacuumStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"vacuum_2\"",
+                            "duration": 1,
+                            "Ingoing": 2,
+                            "ParallelIndex": 7
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;vacuum_2\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;vacuum_2\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;vacuum_2\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;vacuum_2_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;oven_2\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Sous-Vide_Lemon_Curd;blast_4\"",
+            "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                "step": "\"blast_4\"",
+                "duration": 15,
+                "Ingoing": 5,
+                "ParallelIndex": 8
+            },
+            "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_4\""
+        },
+        {
+            "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_4\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_4\"",
+                "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_4_key\""
+            },
+            "NextStepId": "parallel_5"
+        },
+        {
+            "Id": "parallel_5",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;blast_5\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"blast_5\"",
+                            "duration": 15,
+                            "Ingoing": 5,
+                            "ParallelIndex": 9
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_5\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_5\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_5\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_5_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;blast_6\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Sous-Vide_Lemon_Curd;vacuum_3\"",
+                        "StepType": "WorkflowCore.Steps.VacuumStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                            "step": "\"vacuum_3\"",
+                            "duration": 1,
+                            "Ingoing": 5,
+                            "ParallelIndex": 10
+                        },
+                        "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;vacuum_3\""
+                    },
+                    {
+                        "Id": "\"wait_Sous-Vide_Lemon_Curd;vacuum_3\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Sous-Vide_Lemon_Curd;vacuum_3\"",
+                            "EventKey": "\"wait_Sous-Vide_Lemon_Curd;vacuum_3_key\""
+                        },
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;oven_4\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Sous-Vide_Lemon_Curd;blast_6\"",
+            "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                "step": "\"blast_6\"",
+                "duration": 20,
+                "Ingoing": 18,
+                "ParallelIndex": 11
+            },
+            "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_6\""
+        },
+        {
+            "Id": "\"wait_Sous-Vide_Lemon_Curd;blast_6\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Sous-Vide_Lemon_Curd;blast_6\"",
+                "EventKey": "\"wait_Sous-Vide_Lemon_Curd;blast_6_key\""
+            }
+        },
+        {
+            "Id": "\"Sous-Vide_Lemon_Curd;oven_4\"",
+            "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Sous-Vide_Lemon_Curd\"",
+                "step": "\"oven_4\"",
+                "duration": 15,
+                "temperature": 75,
+                "Ingoing": 13,
+                "ParallelIndex": 12
+            },
+            "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;oven_4\""
+        },
+        {
+            "Id": "\"wait_Sous-Vide_Lemon_Curd;oven_4\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Sous-Vide_Lemon_Curd;oven_4\"",
+                "EventKey": "\"wait_Sous-Vide_Lemon_Curd;oven_4_key\""
+            },
+            "NextStepId": "parallel_6"
+        },
+        {
+            "Id": "parallel_6",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [],
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;oven_3\"",
+                        "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"oven_3\"",
+                            "duration": 6,
+                            "temperature": 265,
+                            "Ingoing": 18,
+                            "ParallelIndex": 13
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;oven_3\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;oven_3\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;oven_3\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;oven_3_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;oven_4\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Bistecca_Perfetta;blast_2\"",
+            "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Bistecca_Perfetta\"",
+                "step": "\"blast_2\"",
+                "duration": 10,
+                "Ingoing": 2,
+                "ParallelIndex": 14
+            },
+            "NextStepId": "\"wait_Bistecca_Perfetta;blast_2\""
+        },
+        {
+            "Id": "\"wait_Bistecca_Perfetta;blast_2\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Bistecca_Perfetta;blast_2\"",
+                "EventKey": "\"wait_Bistecca_Perfetta;blast_2_key\""
+            },
+            "NextStepId": "parallel_7"
+        },
+        {
+            "Id": "parallel_7",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;blast_3\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"blast_3\"",
+                            "duration": 15,
+                            "Ingoing": 2,
+                            "ParallelIndex": 15
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;blast_3\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;blast_3\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;blast_3\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;blast_3_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;blast_4\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;human_2\"",
+                        "StepType": "WorkflowCore.Steps.HumanStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"human_2\"",
+                            "duration": 1,
+                            "Ingoing": 2,
+                            "ParallelIndex": 16
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;human_2\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;human_2\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;human_2\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;human_2_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;vacuum_1\""
+                    }
+                ]
+            ]
+        },
+        {
+            "Id": "\"Bistecca_Perfetta;oven_2\"",
+            "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Bistecca_Perfetta\"",
+                "step": "\"oven_2\"",
+                "duration": 45,
+                "temperature": 52,
+                "Ingoing": 5,
+                "ParallelIndex": 17
+            },
+            "NextStepId": "\"wait_Bistecca_Perfetta;oven_2\""
+        },
+        {
+            "Id": "\"wait_Bistecca_Perfetta;oven_2\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Bistecca_Perfetta;oven_2\"",
+                "EventKey": "\"wait_Bistecca_Perfetta;oven_2_key\""
+            },
+            "NextStepId": "parallel_8"
+        },
+        {
+            "Id": "parallel_8",
+            "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
+            "Do": [
+                [
+                    {
+                        "Id": "\"Bistecca_Perfetta;blast_4\"",
+                        "StepType": "WorkflowCore.Steps.BlastStep, ProvaWOrkflowCorewebapp",
+                        "Inputs": {
+                            "receipe": "\"Bistecca_Perfetta\"",
+                            "step": "\"blast_4\"",
+                            "duration": 15,
+                            "Ingoing": 7,
+                            "ParallelIndex": 18
+                        },
+                        "NextStepId": "\"wait_Bistecca_Perfetta;blast_4\""
+                    },
+                    {
+                        "Id": "\"wait_Bistecca_Perfetta;blast_4\"",
+                        "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+                        "Inputs": {
+                            "EventName": "\"wait_Bistecca_Perfetta;blast_4\"",
+                            "EventKey": "\"wait_Bistecca_Perfetta;blast_4_key\""
+                        },
+                        "NextStepId": "\"Bistecca_Perfetta;oven_4\""
+                    }
+                ],
+                [],
+                []
+            ]
+        },
+        {
+            "Id": "\"Bistecca_Perfetta;vacuum_1\"",
+            "StepType": "WorkflowCore.Steps.VacuumStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Bistecca_Perfetta\"",
+                "step": "\"vacuum_1\"",
+                "duration": 8,
+                "Ingoing": 2,
+                "ParallelIndex": 19
+            },
+            "NextStepId": "\"wait_Bistecca_Perfetta;vacuum_1\""
+        },
+        {
+            "Id": "\"wait_Bistecca_Perfetta;vacuum_1\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Bistecca_Perfetta;vacuum_1\"",
+                "EventKey": "\"wait_Bistecca_Perfetta;vacuum_1_key\""
+            },
+            "NextStepId": "\"Bistecca_Perfetta;oven_2\""
+        },
+        {
+            "Id": "\"Bistecca_Perfetta;oven_4\"",
+            "StepType": "WorkflowCore.Steps.OvenStep, ProvaWOrkflowCorewebapp",
+            "Inputs": {
+                "receipe": "\"Bistecca_Perfetta\"",
+                "step": "\"oven_4\"",
+                "duration": 2,
+                "temperature": 265,
+                "Ingoing": 25,
+                "ParallelIndex": 20
+            },
+            "NextStepId": "\"wait_Bistecca_Perfetta;oven_4\""
+        },
+        {
+            "Id": "\"wait_Bistecca_Perfetta;oven_4\"",
+            "StepType": "WorkflowCore.Primitives.WaitFor, WorkflowCore",
+            "Inputs": {
+                "EventName": "\"wait_Bistecca_Perfetta;oven_4\"",
+                "EventKey": "\"wait_Bistecca_Perfetta;oven_4_key\""
+            }
+        }
+    ]
+}

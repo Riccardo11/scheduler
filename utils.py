@@ -2,6 +2,7 @@ from receipt import *
 import networkx as nx
 import matplotlib.pyplot as plt
 import json, pprint
+import warnings
 
 
 def read_steps(filepath):
@@ -116,6 +117,10 @@ class WFCoreUtils:
             self.visited = []
             self.incoming = {}
             self.parallel_index = 0
+            self.new_json = {}
+            self.new_json["Id"] = "New Workflow"
+            self.new_json["Version"] = 1
+            self.new_json["Steps"] = []
 
 
     '''
@@ -156,19 +161,19 @@ class WFCoreUtils:
             step_duration = step_json["Inputs"]["Duration"]
             if (step_json["StepType"] == self.OVEN_STEP_ID):
                 if step_json["Inputs"]["OvenValue1"] == self.PREHEAT_STEP_ID:
-                    self.step_dict[step_id] = PreHeat({"receipe": self.receipe_name, "step": step_id, "duration": step_duration}, None)
+                    self.step_dict[step_id] = PreHeat({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration}, None)
                 else:
                     step_temperature = step_json["Inputs"]["OvenValue2"]
-                    self.step_dict[step_id] = OvenCook({"receipe": self.receipe_name, "step": step_id, "duration": step_duration, "temperature": step_temperature})
+                    self.step_dict[step_id] = OvenCook({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration, "temperature": step_temperature})
             elif (step_json["StepType"] == self.BLAST_STEP_ID):
                 if step_json["Inputs"]["BlastValue1"] == self.PREBLAST_STEP_ID:
-                    self.step_dict[step_id] = PreBlast({"receipe": self.receipe_name, "step": step_id, "duration": step_duration}, None)
+                    self.step_dict[step_id] = PreBlast({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration}, None)
                 else:
-                    self.step_dict[step_id] = Blast({"receipe": self.receipe_name, "step": step_id, "duration": step_duration})
+                    self.step_dict[step_id] = Blast({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration})
             elif (step_json["StepType"] == self.HUMAN_STEP_ID):
-                self.step_dict[step_id] = HumanStep({"receipe": self.receipe_name, "step": step_id, "duration": step_duration})
+                self.step_dict[step_id] = HumanStep({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration})
             elif (step_json["StepType"] == self.VACUUM_STEP_ID):
-                self.step_dict[step_id] = VacuumStep({"receipe": self.receipe_name, "step": step_id, "duration": step_duration})
+                self.step_dict[step_id] = VacuumStep({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration})
 
         elif isinstance(step_json, list):
             for step in step_json:
@@ -220,7 +225,7 @@ class WFCoreUtils:
         return []
 
 
-    def create_graph_from_schedule(self, graph_1, graph_2, schedule):
+    def create_graph_from_schedule(self, scheduled_graphs):
         """
         Create a new workflow in networkx DiGraph format, starting from
         the output obtained by the scheduler. Currently only supported for
@@ -245,13 +250,67 @@ class WFCoreUtils:
             after the schedule activity
 
         """
+
+        starts, ends, machines = {}, {}, {}
+        final_graph = nx.DiGraph()
+
+        for scheduled_graph in scheduled_graphs:
+            starts[scheduled_graph] = nx.get_node_attributes(scheduled_graph, "start")
+            ends[scheduled_graph] = nx.get_node_attributes(scheduled_graph, "end")
+            machines[scheduled_graph] = nx.get_node_attributes(scheduled_graph, "resource")
+
+            final_graph = nx.compose(final_graph, scheduled_graph)
+
+        # pprint.pprint(starts)
+
+        for scheduled_graph in scheduled_graphs:
+            for scheduled_step in scheduled_graph:
+                if (scheduled_graph.in_degree(scheduled_step) != 0):
+                    # inter_precedences is True if a precedence among different receipes is found
+                    inter_precedences = True
+                    for predecessor in scheduled_graph.predecessors(scheduled_step):
+                        # if in the schedule a step is immediately preceded by one of the previous step,
+                        # it means that there are not inter precedences to add
+                        if ends[scheduled_graph][predecessor] == starts[scheduled_graph][scheduled_step] - 1:
+                            inter_precedences = False
+                    
+                    if inter_precedences:
+                        # print(scheduled_step)
+                        for other_scheduled_graph in scheduled_graphs:
+                            if not nx.is_isomorphic(scheduled_graph, other_scheduled_graph):
+                                for other_scheduled_step in other_scheduled_graph:
+                                    if (ends[other_scheduled_graph][other_scheduled_step] + 1 == starts[scheduled_graph][scheduled_step]
+                                        and
+                                        machines[other_scheduled_graph][other_scheduled_step] == machines[scheduled_graph][scheduled_step]):
+                                        final_graph.add_edge(other_scheduled_step, scheduled_step)
+
+                else:
+                    if starts[scheduled_graph][scheduled_step] != 0:
+                        for other_scheduled_graph in scheduled_graphs:
+                            if not nx.is_isomorphic(scheduled_graph, other_scheduled_graph):
+                                for other_scheduled_step in other_scheduled_graph:
+                                    if ((ends[other_scheduled_graph][other_scheduled_step] + 1 == starts[scheduled_graph][scheduled_step]
+                                         or
+                                         ends[other_scheduled_graph][other_scheduled_step] == starts[scheduled_graph][scheduled_step])
+                                        and
+                                        machines[other_scheduled_graph][other_scheduled_step] == machines[scheduled_graph][scheduled_step]):
+                                        print(scheduled_step.attributes["receipe"] + " " + scheduled_step.attributes["step"])
+                                        final_graph.add_edge(other_scheduled_step, scheduled_step)
+
+        nx.draw(final_graph, with_labels=True)
+        plt.show()
+        
+        scheduled_json = self.create_json_from_graph(final_graph)
+
+        # pprint.pprint(self.create_json_from_graph(final_graph))
+
+        # pprint.pprint(self.visited)
+
+        with open("new_workflow.json", "w") as f:
+            json.dump(scheduled_json, f, indent=4)            
         
     
     def create_json_from_graph(self, graph):
-        new_json = {}
-        new_json["Id"] = "New Workflow"
-        new_json["Version"] = 1
-        new_json["Steps"] = []
 
         starting_nodes = self.find_starting_nodes(graph)
 
@@ -259,7 +318,7 @@ class WFCoreUtils:
             self.incoming[step] = sum([len(list(nx.all_simple_paths(graph, starting_step, step))) 
                                        for starting_step in starting_nodes])
 
-        pprint.pprint(self.incoming)
+        # pprint.pprint(self.incoming)
        
         if len(starting_nodes) == 1:
             json_step, wait_json_step, json_parallel = 0, 0, 0
@@ -267,31 +326,44 @@ class WFCoreUtils:
             json_step, wait_json_step, json_parallel = self.get_json_from_step(starting_nodes[0], list(graph.successors(starting_nodes[0])), graph)
                 
 
-            new_json["Steps"].append(json_step)
-            new_json["Steps"].append(wait_json_step)
+            # This condition is not verified if at the beginning there is a parallel after another parallel
+            # Check get_parallel_json_step to undestand
+            if self.new_json == [] or self.new_json["Steps"][0] != 0: 
+                self.new_json["Steps"].append(json_step)
+                self.new_json["Steps"].append(wait_json_step)
 
-            if json_parallel:
-                new_json["Steps"].append(json_parallel)
+                if json_parallel:
+                    self.new_json["Steps"].append(json_parallel)
+            else:
+                self.new_json["Steps"][0](json_step)
+                self.new_json["Steps"].insert(1, json_step)
+
+                if json_parallel:
+                    self.new_json["Steps"].insert(2, json_parallel)
 
         else:
             json_parallel = self.get_parallel_json_step(starting_nodes, graph)
             self.n_parallels = self.n_parallels + 1
-            new_json["Steps"].append(json_parallel)
+            # This condition is not verified if at the beginning there is a parallel after another parallel
+            # Check get_parallel_json_step to undestand
+            if self.new_json == [] or self.new_json["Steps"][0] != 0: 
+                self.new_json["Steps"].append(json_parallel)
+            else:
+                self.new_json["Steps"][0] = json_parallel
 
         for step in graph:
             if not (step in self.visited):
+                print(step.attributes["receipe"] + step.attributes["step"])
                 json_step, wait_json_step, json_parallel = self.get_json_from_step(step, list(graph.successors(step)), graph)
 
-                new_json["Steps"].append(json_step)
-                new_json["Steps"].append(wait_json_step)
+                self.new_json["Steps"].append(json_step)
+                self.new_json["Steps"].append(wait_json_step)
+                self.visited.append(step)
 
                 if json_parallel:
-                    new_json["Steps"].append(json_parallel)
+                    self.new_json["Steps"].append(json_parallel)
 
-
-
-
-        return new_json
+        return self.new_json
             
     def find_starting_nodes(self, graph):
         starting_nodes = []
@@ -304,10 +376,10 @@ class WFCoreUtils:
     def get_json_from_step(self, step, next_steps, graph):
         
         json_step = {}
-        json_step["Id"] = step.attributes["receipe"] + ";" + step.attributes["step"]
+        json_step["Id"] = step.attributes["receipe"][:-1] + ";" + step.attributes["step"][1:]
         json_step["StepType"] = self.STEP_MAP[step.__class__.__name__]
         json_step["Inputs"] = step.attributes
-        json_step["NextStepId"] = "wait_" + json_step["Id"]
+        json_step["NextStepId"] = "\"wait_" + json_step["Id"][1:]
         if self.incoming[step] > 1:
             json_step["Inputs"]["Ingoing"] = self.incoming[step]
             json_step["Inputs"]["ParallelIndex"] = self.parallel_index
@@ -318,15 +390,15 @@ class WFCoreUtils:
         wait_json_step["StepType"] = "WorkflowCore.Primitives.WaitFor, WorkflowCore"
         wait_json_step["Inputs"] = {
             "EventName": wait_json_step["Id"],
-            "EventKey": wait_json_step["Id"] + "_key"
+            "EventKey": wait_json_step["Id"][:-1] + "_key" + "\""
         }
 
         json_parallel = 0
 
         if len(next_steps) == 1:
-            wait_json_step["NextStepId"] = (next_steps[0].attributes["receipe"] +
+            wait_json_step["NextStepId"] = (next_steps[0].attributes["receipe"][:-1] +
                                             ";" +
-                                            next_steps[0].attributes["step"])
+                                            next_steps[0].attributes["step"][1:])
         elif len(next_steps) > 1:
             wait_json_step["NextStepId"] = "parallel_" + str(self.n_parallels)
             json_parallel = self.get_parallel_json_step(next_steps, graph)
@@ -345,10 +417,18 @@ class WFCoreUtils:
         self.n_parallels = self.n_parallels + 1
 
         for i, next_step in enumerate(next_steps):
-            self.visited.append(next_step)
-            json_next_step, json_wait_next_step, _ = self.get_json_from_step(next_step, list(graph.successors(next_step)), graph)
-            json_parallel["Do"][i].append(json_next_step)
-            json_parallel["Do"][i].append(json_wait_next_step)
+            if (not (next_step in self.visited)) or (next_step in self.find_starting_nodes(graph)):
+                print("Parallel")
+                print(next_step.attributes["receipe"] + next_step.attributes["step"])
+                json_next_step, json_wait_next_step, other_json_parallel = self.get_json_from_step(next_step, list(graph.successors(next_step)), graph)
+                if other_json_parallel and self.new_json["Steps"] != []:
+                    self.new_json["Steps"].append(other_json_parallel)
+                elif other_json_parallel:
+                    self.new_json["Steps"].append(0)
+                    self.new_json["Steps"].append(other_json_parallel)
+                json_parallel["Do"][i].append(json_next_step)
+                json_parallel["Do"][i].append(json_wait_next_step)
+                self.visited.append(next_step)
 
         return json_parallel
 
@@ -362,19 +442,22 @@ if __name__ == '__main__':
         blast_step_1 = Blast({"receipe": "Ricettona", "step": "blast_1", "duration": 4})
         human_step_1 = HumanStep({"receipe": "Ricettona", "step": "human_1", "duration": 6})
         vacuum_1 = VacuumStep({"receipe": "Ricettona", "step": "vacuum_1", "duration": 2})
+        human_step_2 = HumanStep({"receipe": "Ricettona", "step": "human_2", "duration": 6})
 
         g = nx.DiGraph()
         g.add_edge(oven_cook_1, blast_step_1)
         g.add_edge(oven_cook_1, human_step_1)
         g.add_edge(blast_step_1, vacuum_1)
         g.add_edge(human_step_1, vacuum_1)
+        g.add_edge(vacuum_1, human_step_2)
 
-        pprint.pprint(wfutils.create_json_from_graph(g))
+        # pprint.pprint(wfutils.create_json_from_graph(g))
 
         # This function is useful to set the "ingoing" parameter
         for path in nx.all_simple_paths(g, oven_cook_1, vacuum_1): 
             print(path)
 
+        wfutils.create_graph_from_schedule([g])
         # wfutils.draw_graph()
 
         # print(wfutils.step_dict)
