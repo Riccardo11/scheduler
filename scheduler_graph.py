@@ -453,6 +453,16 @@ def SIAF_scheduler():
                                     if not isinstance(step_1, PreHeat) or step_1.attributes["temperature"] != step.attributes["temperature"]:
                                         model.AddNoOverlap([all_steps[(rec_id, step_id, compatible_machine, 0)].interval,
                                                             all_steps[(rec_id_1, step_id_1, compatible_machine, 0)].interval])
+            elif isinstance(step, PreBlast):
+                for rec_id_1, receipt_1 in enumerate(receipts):
+                    for step_id_1, step_1 in enumerate(receipt_1):
+                        if step != step_1:
+                            preBlast_cms = find_compatible_machines(step)
+                            for compatible_machine in find_compatible_machines(step_1):
+                                if compatible_machine in preBlast_cms:
+                                    if not isinstance(step_1, PreBlast) or step_1.attributes["temperature"] != step.attributes["temperature"]:
+                                        model.AddNoOverlap([all_steps[(rec_id, step_id, compatible_machine)].interval,
+                                                            all_steps[(rec_id_1, step_id_1, compatible_machine)].interval])
                                    
                                     # if ((isinstance(step_1, OvenCook) or isinstance(step_1, PreStep))
                                     #     and
@@ -538,7 +548,11 @@ def SIAF_scheduler():
                     # ovencook
                     for rec_id_1, receipt_1 in enumerate(receipts):
                         for step_id_1, step_1 in enumerate(receipt_1):
-                            if step != step_1 and cook_index != step_id_1:
+                            if ((step != step_1 and cook_index != step_id_1)
+                                and
+                                ((not isinstance(step_1, PreHeat)) or step.attributes["temperature"] != step_1.attributes["temperature"])
+                                and
+                                ((not isinstance(step_1, OvenCook)) or step.attributes["temperature"] != step_1.attributes["temperature"])):
                                 for compatible_machine_1 in find_compatible_machines(step_1):
                                     if compatible_machine == compatible_machine_1:
                                         oven_activity_starts_after = model.NewBoolVar(
@@ -570,6 +584,34 @@ def SIAF_scheduler():
                     # model.Add(all_steps[(rec_id, step_id, compatible_machine)].end  + 1
                     #         >=
                     #         all_steps[(rec_id, blast_index, compatible_machine)].start)
+                    for rec_id_1, receipt_1 in enumerate(receipts):
+                        for step_id_1, step_1 in enumerate(receipt_1):
+                            if ((step != step_1 and blast_index != step_id_1)
+                                and
+                                ((not isinstance(step_1, PreBlast)) or step.attributes["temperature"] != step_1.attributes["temperature"])
+                                and
+                                ((not isinstance(step_1, Blast)) or step.attributes["temperature"] != step_1.attributes["temperature"])):
+                                for compatible_machine_1 in find_compatible_machines(step_1):
+                                    if compatible_machine == compatible_machine_1:
+                                        blast_activity_starts_after = model.NewBoolVar(
+                                            "blast_activity_starts_after_%i_%i_%i_%i_%i" % (rec_id, step_id, rec_id_1, step_id_1, compatible_machine)
+                                        )
+                                        model.Add(all_steps[(rec_id_1, step_id_1, compatible_machine)].start
+                                                  > 
+                                                  all_steps[(rec_id, blast_index, compatible_machine)].end).OnlyEnforceIf(
+                                                      blast_activity_starts_after
+                                                  )
+                                        
+                                        blast_activity_ends_before = model.NewBoolVar(
+                                            "blast_activity_ends_before_%i_%i_%i_%i_%i" % (rec_id, step_id, rec_id_1, step_id_1, compatible_machine)
+                                        )
+                                        model.Add(all_steps[(rec_id_1, step_id_1, compatible_machine)].end
+                                                  <
+                                                  all_steps[(rec_id, step_id, compatible_machine)].start).OnlyEnforceIf(
+                                                      blast_activity_ends_before
+                                                  )
+
+                                        model.AddBoolOr([blast_activity_starts_after, blast_activity_ends_before])
 
 
     '''
@@ -887,6 +929,14 @@ def SIAF_scheduler():
                                     if m_id == m_id_1:
                                         model.AddNoOverlap([all_steps[rec_id, step_id, m_id, 0].interval,
                                                             all_steps[rec_id_1, step_id_1, m_id_1, 0].interval])
+                        elif (isinstance(step, Blast) and 
+                            isinstance(step_1, Blast) and
+                            step.attributes["temperature"] != step_1.attributes["temperature"]):
+                            for m_id in find_compatible_machines(step):
+                                for m_id_1 in find_compatible_machines(step_1):
+                                    if m_id == m_id_1:
+                                        model.AddNoOverlap([all_steps[rec_id, step_id, m_id].interval,
+                                                            all_steps[rec_id_1, step_id_1, m_id_1].interval])
 
 
 

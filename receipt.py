@@ -5,7 +5,14 @@ class Step:
         self.attributes = attributes
 
     def __str__(self):
-        return self.attributes["receipe"] + ";" + self.attributes["step"]
+        r = ""
+        if self.attributes["receipe"] == '"Sous-Vide_Lemon_Curd"':
+            r = "S"
+        elif self.attributes["receipe"] == '"Bistecca_Perfetta"':
+            r = "B"
+        else:
+            return self.attributes["receipe"] + ";" + self.attributes["step"]
+        return r + ";" + self.attributes["step"]
 
     # def __eq__(self, other):
     #     if isinstance(other, self.__class__):

@@ -13,7 +13,8 @@
                         "Inputs": {
                             "receipe": "\"Sous-Vide_Lemon_Curd\"",
                             "step": "\"blast_1\"",
-                            "duration": 15
+                            "duration": 15,
+                            "temperature": 3
                         },
                         "NextStepId": "\"wait_Sous-Vide_Lemon_Curd;blast_1\""
                     },
@@ -77,7 +78,8 @@
                         "Inputs": {
                             "receipe": "\"Bistecca_Perfetta\"",
                             "step": "\"blast_1\"",
-                            "duration": 15
+                            "duration": 15,
+                            "temperature": 3
                         },
                         "NextStepId": "\"wait_Bistecca_Perfetta;blast_1\""
                     },
@@ -105,6 +107,7 @@
                             "receipe": "\"Sous-Vide_Lemon_Curd\"",
                             "step": "\"blast_2\"",
                             "duration": 5,
+                            "temperature": 3,
                             "Ingoing": 2,
                             "ParallelIndex": 0
                         },
@@ -275,6 +278,7 @@
                             "receipe": "\"Sous-Vide_Lemon_Curd\"",
                             "step": "\"blast_3\"",
                             "duration": 15,
+                            "temperature": 0,
                             "Ingoing": 2,
                             "ParallelIndex": 6
                         },
@@ -322,6 +326,7 @@
                 "receipe": "\"Sous-Vide_Lemon_Curd\"",
                 "step": "\"blast_4\"",
                 "duration": 15,
+                "temperature": 0,
                 "Ingoing": 5,
                 "ParallelIndex": 8
             },
@@ -348,6 +353,7 @@
                             "receipe": "\"Sous-Vide_Lemon_Curd\"",
                             "step": "\"blast_5\"",
                             "duration": 15,
+                            "temperature": 3,
                             "Ingoing": 5,
                             "ParallelIndex": 9
                         },
@@ -395,6 +401,7 @@
                 "receipe": "\"Sous-Vide_Lemon_Curd\"",
                 "step": "\"blast_6\"",
                 "duration": 20,
+                "temperature": 0,
                 "Ingoing": 18,
                 "ParallelIndex": 11
             },
@@ -434,7 +441,13 @@
             "Id": "parallel_6",
             "StepType": "WorkflowCore.Primitives.Sequence, WorkflowCore",
             "Do": [
-                [],
+                [
+                    {
+                        "Id": "\"fake_0\"",
+                        "StepType": "WorkflowCore.Steps.FakeStep, ProvaWOrkflowCorewebapp",
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;blast_6\""
+                    }
+                ],
                 [
                     {
                         "Id": "\"Bistecca_Perfetta;oven_3\"",
@@ -468,6 +481,7 @@
                 "receipe": "\"Bistecca_Perfetta\"",
                 "step": "\"blast_2\"",
                 "duration": 10,
+                "temperature": 3,
                 "Ingoing": 2,
                 "ParallelIndex": 14
             },
@@ -494,6 +508,7 @@
                             "receipe": "\"Bistecca_Perfetta\"",
                             "step": "\"blast_3\"",
                             "duration": 15,
+                            "temperature": 3,
                             "Ingoing": 2,
                             "ParallelIndex": 15
                         },
@@ -568,6 +583,7 @@
                             "receipe": "\"Bistecca_Perfetta\"",
                             "step": "\"blast_4\"",
                             "duration": 15,
+                            "temperature": 3,
                             "Ingoing": 7,
                             "ParallelIndex": 18
                         },
@@ -583,8 +599,20 @@
                         "NextStepId": "\"Bistecca_Perfetta;oven_4\""
                     }
                 ],
-                [],
-                []
+                [
+                    {
+                        "Id": "\"fake_1\"",
+                        "StepType": "WorkflowCore.Steps.FakeStep, ProvaWOrkflowCorewebapp",
+                        "NextStepId": "\"Bistecca_Perfetta;oven_3\""
+                    }
+                ],
+                [
+                    {
+                        "Id": "\"fake_2\"",
+                        "StepType": "WorkflowCore.Steps.FakeStep, ProvaWOrkflowCorewebapp",
+                        "NextStepId": "\"Sous-Vide_Lemon_Curd;oven_3\""
+                    }
+                ]
             ]
         },
         {

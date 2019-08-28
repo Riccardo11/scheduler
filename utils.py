@@ -117,6 +117,7 @@ class WFCoreUtils:
             self.visited = []
             self.incoming = {}
             self.parallel_index = 0
+            self.n_fake = 0
             self.new_json = {}
             self.new_json["Id"] = "New Workflow"
             self.new_json["Version"] = 1
@@ -169,7 +170,8 @@ class WFCoreUtils:
                 if step_json["Inputs"]["BlastValue1"] == self.PREBLAST_STEP_ID:
                     self.step_dict[step_id] = PreBlast({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration}, None)
                 else:
-                    self.step_dict[step_id] = Blast({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration})
+                    step_temperature = step_json["Inputs"]["BlastValue2"]
+                    self.step_dict[step_id] = Blast({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration, "temperature": step_temperature})
             elif (step_json["StepType"] == self.HUMAN_STEP_ID):
                 self.step_dict[step_id] = HumanStep({"receipe": "\"" + self.receipe_name + "\"", "step": "\"" + step_id + "\"", "duration": step_duration})
             elif (step_json["StepType"] == self.VACUUM_STEP_ID):
@@ -195,6 +197,7 @@ class WFCoreUtils:
                     self.step_dict[step_id].attributes["temperature"] = self.step_dict[next_step_id].attributes["temperature"]
                     self.step_dict[step_id].next_step = self.step_dict[next_step_id]
                 if isinstance(self.step_dict[step_id], PreBlast) and isinstance(self.step_dict[next_step_id], Blast):
+                    self.step_dict[step_id].attributes["temperature"] = self.step_dict[next_step_id].attributes["temperature"]
                     self.step_dict[step_id].next_step = self.step_dict[next_step_id]
                 self.graph.add_edge(self.step_dict[step_id], self.step_dict[next_step_id])
 
@@ -418,8 +421,8 @@ class WFCoreUtils:
 
         for i, next_step in enumerate(next_steps):
             if (not (next_step in self.visited)) or (next_step in self.find_starting_nodes(graph)):
-                print("Parallel")
-                print(next_step.attributes["receipe"] + next_step.attributes["step"])
+                # print("Parallel")
+                # print(next_step.attributes["receipe"] + next_step.attributes["step"])
                 json_next_step, json_wait_next_step, other_json_parallel = self.get_json_from_step(next_step, list(graph.successors(next_step)), graph)
                 if other_json_parallel and self.new_json["Steps"] != []:
                     self.new_json["Steps"].append(other_json_parallel)
@@ -429,6 +432,15 @@ class WFCoreUtils:
                 json_parallel["Do"][i].append(json_next_step)
                 json_parallel["Do"][i].append(json_wait_next_step)
                 self.visited.append(next_step)
+            else:
+                fake_activity = {
+                    "Id": "\"fake_" + str(self.n_fake) + "\"",
+                    "StepType": "WorkflowCore.Steps.FakeStep, ProvaWOrkflowCorewebapp",
+                    "NextStepId": next_step.attributes["receipe"][:-1] + ";" + next_step.attributes["step"][1:]
+                }
+                self.n_fake += 1
+
+                json_parallel["Do"][i].append(fake_activity)
 
         return json_parallel
 
